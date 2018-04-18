@@ -55,7 +55,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.security.SecurityMiddleware',
 )
 
-ROOT_URLCONF = 'daliyfreshtest.urls'
+ROOT_URLCONF = 'df_test.urls'
 
 TEMPLATES = [
     {
@@ -74,7 +74,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'daliyfreshtest.wsgi.application'
+WSGI_APPLICATION = 'df_test.wsgi.application'
 
 
 # Database

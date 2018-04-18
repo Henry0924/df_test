@@ -7,6 +7,7 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from itsdangerous import SignatureExpired
 from django.http import HttpResponse
 from django.core.mail import send_mail
+from celery_tasks.tasks import send_register_active_mail
 import re
 
 
@@ -27,21 +28,25 @@ class RegisterView(View):
         allow = request.POST.get('allow')
 
         # 进行数据校验
-        if not all([username, password, email]):
-            return render(request, 'user/register.html', {'errmsg': '数据不完整'})
+        # 1.校验注册信息是否完整
+        if not all([username, password, email, allow]):
+            return render(request, 'user/register.html', {'errmsg': '请将注册信息填写完整'})
+
+        # 2.校验邮箱格式是否合法
         if not re.match(r'^[a-z0-9][\w.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
             return render(request, 'user/register.html', {'errmsg': '邮箱格式不正确'})
+
+        # 3.校验是否同意协议
         if allow != 'on':
-            return render(request, 'user/register.html', {'errmsg': '请同意协议'})
+            return render(request, 'user/register.html', {'errmsg': '请同意注册协议'})
 
         # 检验用户名是否重复
         try:
-            user_exist = User.objects.get(username=username)
+            user = User.objects.get(username=username)
         except User.DoesNotExist:
-            # 用户名不存在
-            user_exist = None
+            user = None
         else:
-            return render(request, 'user/register.html', {'errmsg': '用户名已存在'})
+            return HttpResponse('此用户名已经注册过')
 
         # 进行业务处理：进行用户注册
         user = User.objects.create_user(username, email, password)
@@ -55,38 +60,27 @@ class RegisterView(View):
         token = token.decode()
 
         # 发送邮件
-        subject = '天天生鲜欢迎信息'
-        message = ''
-        sender = settings.EMAIL_FROM
-        receiver = [email]
-        html_message = '<h1>%s,欢迎您成为天天生鲜注册会员</h1>' \
-                       '请点击下面链接激活您的账户<br/>' \
-                       '<a href="http://127.0.0.1:8000/user/active/%s">http://127.0.0.1:8000/user/active/%s</a>'\
-                       %(username, token, token)
-        send_mail(subject, message, sender, receiver, html_message=html_message)
-
+        send_register_active_mail.delay(email, username, token)
+        # 返回响应
         return redirect(reverse('apps.goods:index'))
 
 
 class ActiveView(View):
     """用户激活"""
     def get(self, request, token):
-        """进行用户激活"""
-        # 进行解密， 获取要激活的用户信息
+        # 解密激活链接token，获取用户id
         serializer = Serializer(settings.SECRET_KEY, 3600)
         try:
             info = serializer.loads(token)
-            # 获取待激活用户的id
             user_id = info['confirm']
-            # 根据id获取用户信息
+            # 根据用户id获取用户信息
             user = User.objects.get(id=user_id)
             user.is_active = 1
             user.save()
-            # 跳转到登陆页面
+            # 激活成功返回登录页面
             return redirect(reverse('apps.user:login'))
         except SignatureExpired as e:
-            # 激活链接已过期
-            return HttpResponse('激活链接已过期')
+            return HttpResponse('激活链接已经过期，请重新发送')
 
 
 class LoginView(View):
