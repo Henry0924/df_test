@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.core.urlresolvers import reverse
 from django.views.generic import View
-from apps.user.models import User, Address
+from apps.user.models import User, Address, DefaultAddress
 from django.conf import settings
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from itsdangerous import SignatureExpired
@@ -142,11 +142,13 @@ class UserInfoView(LoginRequiredMixin, View):
     def get(self, request):
         """显示用户中心页面"""
         # 有默认地址，则显示默认地址
-        user = request.user  # 获取当前登录的用户对象
-        try:
-            address = Address.objects.get(user=user, is_default=True)
-        except Address.DoesNotExist:
-            address = None
+        # user = request.user  # 获取当前登录的用户对象
+        # try:
+        #     address = Address.objects.get(user=user, is_default=True)
+        # except Address.DoesNotExist:
+        #     address = None
+        address = Address.objects.get_default_address(request)
+
         return render(request, 'user/user_center_info.html', {'page': 'user', 'address': address})
 
 
@@ -162,11 +164,12 @@ class AddressView(LoginRequiredMixin, View):
     def get(self, request):
         """显示收货地址页面"""
         # 有默认地址，则显示默认地址
-        user = request.user  # 获取当前登录的用户对象
-        try:
-            address = Address.objects.get(user=user, is_default=True)
-        except Address.DoesNotExist:
-            address = None
+        # user = request.user  # 获取当前登录的用户对象
+        # try:
+        #     address = Address.objects.get(user=user, is_default=True)
+        # except Address.DoesNotExist:
+        #     address = None
+        address = Address.objects.get_default_address(request)
         return render(request, 'user/user_center_site.html', {'page': 'address', 'address': address})
 
     def post(self, request):
