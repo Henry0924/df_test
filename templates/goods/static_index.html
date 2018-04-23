@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'static_base.html' %}
 {% block title %}天天生鲜-首页{% endblock title %}
 {% block top_js %}
     <script type="text/javascript" src="/static/js/jquery-1.12.4.min.js"></script>
@@ -30,7 +30,7 @@
         <div class="slide fl">
             <ul class="slide_pics">
                 {% for banner in goods_banner %}
-                    <li><img src="{{ banner.image.url }}" alt="幻灯片"></li>
+                    <li><a href="{% url 'apps.goods:detail' banner.sku.id %}"><img src="{{ banner.image.url }}" alt="幻灯片"></a></li>
                 {% endfor %}
             </ul>
             <div class="prev"></div>
@@ -54,7 +54,7 @@
                     {% endfor %}
 
                 </div>
-                <a href="{% url 'apps.goods:list' type.id 1 %}" class="goods_more fr" id="fruit_more">查看更多 ></a>
+                <a href="{% url 'apps.goods:list' %}" class="goods_more fr" id="fruit_more">查看更多 ></a>
             </div>
 
             <div class="goods_con clearfix">

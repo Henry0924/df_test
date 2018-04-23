@@ -1,9 +1,8 @@
-from django.conf.urls import include, url
-from apps.goods import views
-from apps.goods.views import IndexView
+from django.conf.urls import url
+from apps.goods.views import IndexView, GoodsListView, DetailView
 
 urlpatterns = [
-    url(r'^$', IndexView.as_view(), name='index'),
-    url(r'^list$', views.goods_list, name='list'),
-    url(r'^detail$', views.detail, name='detail'),
+    url(r'^index$', IndexView.as_view(), name='index'),
+    url(r'^list/(?P<type_id>\d+)/(?P<page>\d+)$', GoodsListView.as_view(), name='list'),
+    url(r'^detail/(?P<goods_id>\d+)$', DetailView.as_view(), name='detail'),
 ]

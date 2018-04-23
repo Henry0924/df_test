@@ -9,6 +9,8 @@ from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from celery_tasks.tasks import send_register_active_mail
 from utils.mixin import LoginRequiredMixin
+from django_redis import get_redis_connection
+from apps.goods.models import GoodsSKU
 import re
 
 
@@ -148,8 +150,17 @@ class UserInfoView(LoginRequiredMixin, View):
         # except Address.DoesNotExist:
         #     address = None
         address = Address.objects.get_default_address(request)
+        # 获取用户历史浏览记录
+        conn = get_redis_connection('default')
+        history_key = 'history_%d' % request.user.id
+        sku_ids = conn.lrange(history_key, 0, 4)
+        goods_list = []
+        for id in sku_ids:
+            goods = GoodsSKU.objects.get(id=id)
+            goods_list.append(goods)
 
-        return render(request, 'user/user_center_info.html', {'page': 'user', 'address': address})
+        return render(request, 'user/user_center_info.html', {'page': 'user', 'address': address,
+                                                              'goods_list': goods_list})
 
 
 class UserOrderView(LoginRequiredMixin, View):
