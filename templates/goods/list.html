@@ -51,7 +51,7 @@
                 {% if page_skus.has_previous %}
                     <a href="{% url 'apps.goods:list' type.id page_skus.previous_page_number %}?sort={{ sort }}">&lt;上一页</a>
                 {% endif %}
-                {% for pindex in page_skus.paginator.page_range %}
+                {% for pindex in pages %}
                     {% if pindex == page_skus.number %}
                         <a href="{% url 'apps.goods:list' type.id pindex %}?sort={{ sort }}" class="active">{{ pindex }}</a>
                     {% else %}

@@ -39,7 +39,8 @@
             <div class="total">总价：<em>16.80元</em></div>
             <div class="operate_btn">
                 <a href="javascript:;" class="buy_btn">立即购买</a>
-                <a href="javascript:;" class="add_cart" id="add_cart">加入购物车</a>
+                <a href="javascript:;" sku_id={{ sku.id }} class="add_cart" id="add_cart">加入购物车</a>
+                {% csrf_token %}
             </div>
         </div>
     </div>
@@ -50,11 +51,11 @@
                 <h3>新品推荐</h3>
                 <ul>
                     {% for sku in new_skus %}
-                    <li>
-                        <a href="{% url 'apps.goods:detail' sku.id %}"><img src="{{ sku.image.url }}"></a>
-                        <h4><a href="{% url 'apps.goods:detail' sku.id %}">{{ sku.name }}</a></h4>
-                        <div class="prize">￥{{ sku.price }}</div>
-                    </li>
+                        <li>
+                            <a href="{% url 'apps.goods:detail' sku.id %}"><img src="{{ sku.image.url }}"></a>
+                            <h4><a href="{% url 'apps.goods:detail' sku.id %}">{{ sku.name }}</a></h4>
+                            <div class="prize">￥{{ sku.price }}</div>
+                        </li>
                     {% endfor %}
                 </ul>
             </div>
@@ -74,9 +75,9 @@
                 </dl>
                 <dl>
                     {% for comment in sku_comments %}
-                    <dt>评论时间：{{ comment.create_time }}&nbsp;&nbsp;用户名：{{ comment.order.user.username }}</dt>
-                    <dd>评论内容：{{ comment.comment }}
-                    </dd>
+                        <dt>评论时间：{{ comment.create_time }}&nbsp;&nbsp;用户名：{{ comment.order.user.username }}</dt>
+                        <dd>评论内容：{{ comment.comment }}
+                        </dd>
                     {% endfor %}
                 </dl>
             </div>
@@ -90,24 +91,76 @@
 {% block bottom_js %}
     <script type="text/javascript" src="/static/js/jquery-1.12.4.min.js"></script>
     <script type="text/javascript">
+        var price = $('.show_pirze').children('em').text(),
+            num_show = $('.num_show'),
+            csrf = $('input[name="csrfmiddlewaretoken"]').val(),
+            count;
+        // 更新总价显示
+        update_total_price();
+        function update_total_price() {
+            count = num_show.val();
+            var total_price = parseInt(count) * parseFloat(price);
+            $('.total').children('em').text(total_price.toFixed(2) + '元');
+        }
+        // 增加商品数量
+        $('.add').click(function () {
+            count = num_show.val();
+            count = parseInt(count) + 1;
+            $('.num_show').val(count);
+            update_total_price();
+        });
+        // 减少商品数量
+        $('.minus').click(function () {
+            count = num_show.val();
+            count = parseInt(count) - 1;
+            if (count <= 0) {
+                count = 1;
+            }
+            $('.num_show').val(count);
+            update_total_price();
+        });
+        // 手动修改数量
+        num_show.blur(function () {
+            count = num_show.val();
+            if (isNaN(count) || count.trim().length == 0 || parseInt(count) <= 0) {
+                count = 1;
+            }
+            $('.num_show').val(count);
+            update_total_price();
+        });
+
         var $add_x = $('#add_cart').offset().top;
         var $add_y = $('#add_cart').offset().left;
 
         var $to_x = $('#show_count').offset().top;
         var $to_y = $('#show_count').offset().left;
 
-        $(".add_jump").css({'left': $add_y + 80, 'top': $add_x + 10, 'display': 'block'})
+        $(".add_jump").css({'left': $add_y + 80, 'top': $add_x + 10, 'display': 'block'});
         $('#add_cart').click(function () {
-            $(".add_jump").stop().animate({
-                    'left': $to_y + 7,
-                    'top': $to_x + 7
-                },
-                "fast", function () {
-                    $(".add_jump").fadeOut('fast', function () {
-                        $('#show_count').html(2);
-                    });
+            // 准备ajax要传递的参数
+            var sku_id = $(this).attr('sku_id');
+            count = num_show.val();
+            var params = {'sku_id': sku_id, 'count': count, 'csrfmiddlewaretoken': csrf};
+            $.post('/cart/add', params, function (data) {
+                if (data.res == 5) {
+                    //添加成功
+                    $(".add_jump").stop().animate({
+                            'left': $to_y + 7,
+                            'top': $to_x + 7
+                        },
+                        "fast", function () {
+                            $(".add_jump").fadeOut('fast', function () {
+                                $('#show_count').html(data.total_count);
+                            });
 
-                });
+                        });
+                } else {
+                    //添加失败
+                    alert(data.errmsg);
+                }
+            });
+
+
         })
     </script>
 {% endblock bottom_js %}

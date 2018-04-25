@@ -1,7 +1,8 @@
-from django.conf.urls import include, url
-from apps.cart import views
+from django.conf.urls import url
+from apps.cart.views import CartAddView, CartInfoView
 
 urlpatterns = [
-    url(r'^cart$', views.cart, name='cart'),
+    url(r'^show_cart', CartInfoView.as_view(), name='cart'),
+    url(r'^add$', CartAddView.as_view(), name='add'),
 
 ]

@@ -71,13 +71,25 @@ class GoodsListView(View):
         if page > paginator.num_pages:
             page = 1
         page_skus = paginator.page(page)
+        # 分页控制，最多显示5个分页
+        num_pages = paginator.num_pages
+        if num_pages < 5:
+            pages = range(1, num_pages+1)
+        elif page <= 3:
+            pages = range(1, 6)
+        elif num_pages - page <= 2:
+            pages = range(num_pages-4, num_pages+1)
+        else:
+            pages = range(page-2, page+3)
+
         # 获取新品信息
         new_skus = GoodsSKU.objects.filter(type=type).order_by('-create_time')[:2]
         # 全部分类
         types = GoodsType.objects.all()
 
         # 准备上下文
-        context = {'type': type, 'types': types, 'page_skus': page_skus, 'new_skus': new_skus, 'sort': sort}
+        context = {'type': type, 'types': types, 'page_skus': page_skus,
+                   'new_skus': new_skus, 'sort': sort, 'pages': pages}
 
         return render(request, 'goods/list.html', context)
 
