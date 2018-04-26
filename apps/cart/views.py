@@ -78,3 +78,78 @@ class CartInfoView(LoginRequiredMixin, View):
 
         return render(request, 'cart/cart.html', context)
 
+
+class CartUpdateView(View):
+    def post(self, request):
+        """更新购物车数据"""
+        user = request.user
+        if not user.is_authenticated():
+            return JsonResponse({'res': 0, 'errmsg': '请先登录'})
+        # 获取数据
+        sku_id = request.POST.get('sku_id')
+        count = request.POST.get('count')
+
+        # 校验数据
+        if not all([sku_id, count]):
+            return JsonResponse({'res': 1, 'errmsg': '数据不完整'})
+        try:
+            count = int(count)
+            if count <= 0:
+                return JsonResponse({'res': 2, 'errmsg': '商品数量不正确'})
+        except Exception as e:
+            return JsonResponse({'res': 2, 'errmsg': '商品数量不正确'})
+
+        try:
+            sku = GoodsSKU.objects.get(id=sku_id)
+        except GoodsSKU.DoesNotExist:
+            return JsonResponse({'res': 3, 'errmsg': '该商品不存在'})
+
+        # 更新购物车数据
+        conn = get_redis_connection('default')
+        cart_key = 'cart_%d' % user.id
+        if count > sku.stock:
+            return JsonResponse({'res': 4, 'errmsg': '商品库存不足'})
+        conn.hset(cart_key, sku_id, count)
+
+        # 获取商品总件数
+        total = 0
+        vals = conn.hvals(cart_key)
+        for val in vals:
+            total += int(val)
+
+        # 返回应答
+        return JsonResponse({'res': 5, 'total': total, 'msg': '更新成功'})
+
+
+class CartDeleteView(View):
+    def post(self, request):
+        """删除购物车记录"""
+        user = request.user
+        if not user.is_authenticated():
+            return JsonResponse({'res': 0, 'errmsg': '请先登录'})
+        # 获取数据
+        sku_id = request.POST.get('sku_id')
+
+        # 校验数据
+        if not sku_id:
+            return JsonResponse({'res': 1, 'errmsg': '数据不完整'})
+
+        try:
+            sku = GoodsSKU.objects.get(id=sku_id)
+        except GoodsSKU.DoesNotExist:
+            return JsonResponse({'res': 2, 'errmsg': '商品不存在'})
+
+        # 删除购物车数据
+        conn = get_redis_connection('default')
+        cart_key = 'cart_%d' % user.id
+        conn.hdel(cart_key, sku_id)
+
+        # 获取商品总件数
+        total = 0
+        vals = conn.hvals(cart_key)
+        for val in vals:
+            total += int(val)
+
+        # 返回应答
+        return JsonResponse({'res': 3, 'total': total, 'msg': '删除成功'})
+
