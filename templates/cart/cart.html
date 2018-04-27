@@ -166,6 +166,7 @@
                 sku_id = $(this).attr('sku_id');
             if (isNaN(alter_count) || alter_count.trim().length == 0 || parseInt(alter_count) <= 0) {
                 $(this).val(current_count);
+                return;
             }
             // 通过ajax post请求，更新购物车数据
             update_remote_cart(sku_id, alter_count);

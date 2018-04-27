@@ -94,8 +94,6 @@ class CartUpdateView(View):
             return JsonResponse({'res': 1, 'errmsg': '数据不完整'})
         try:
             count = int(count)
-            if count <= 0:
-                return JsonResponse({'res': 2, 'errmsg': '商品数量不正确'})
         except Exception as e:
             return JsonResponse({'res': 2, 'errmsg': '商品数量不正确'})
 
